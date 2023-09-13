@@ -87,7 +87,27 @@ environment using autogen.sh:
 
     ./autogen.sh
 
-Otherwise for release versions, use configure directly:
+FIXME-aiosa: Make the build system less difficult
+Otherwise for release versions, use configure directly. The extension depends in vips and minizip.
+Vips (dev) should be installed (e.g. apt-get...), minizip-ng should be compiled and the link
+to the library directory should be specified in LDFLAGS and CPPFLAGS. This example compiles and uses
+the minizip library in the same parent directory as the iipsrv repository. Note that the compilation
+happens in iipsrv/src/. If you have files like this, where `minizip-ng` has also the header files
+
+
+    parent_dir
+     |  - iipsrv
+     |  |  - configure
+     |  - minizip-ng
+     |  |  - libminizip-ng.a
+
+then you can build like so (`libminizip-ng.a` name is required, the library builds the static
+file with different file name):
+
+    ./configure CXXFLAGS="$(pkg-config vips-cpp --cflags)" LIBS="$(pkg-config vips-cpp --libs)" \
+       LDFLAGS="-L../../minizip-ng" \
+       CPPFLAGS="-I../../minizip-ng"
+//FIXME-end
 
     ./configure
     make

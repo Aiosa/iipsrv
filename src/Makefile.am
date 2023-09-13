@@ -4,7 +4,7 @@ noinst_PROGRAMS =	iipsrv.fcgi
 
 
 INCLUDES =		@INCLUDES@ @LIBFCGI_INCLUDES@ @JPEG_INCLUDES@ @TIFF_INCLUDES@
-LIBS =			@LIBS@ @LIBFCGI_LIBS@ @DL_LIBS@ @JPEG_LIBS@ @TIFF_LIBS@ -lm
+LIBS =			@LIBS@ @LIBFCGI_LIBS@ @DL_LIBS@ @JPEG_LIBS@ @TIFF_LIBS@ -lm -lminizip-ng
 AM_LDFLAGS =		@LIBFCGI_LDFLAGS@
 
 iipsrv_fcgi_LDADD = Main.o
@@ -57,17 +57,21 @@ iipsrv_fcgi_SOURCES = \
 			Transforms.cc \
 			Environment.h \
 			URL.h \
+			Utils.h \
+            Utils.cpp \
 			Writer.h \
 			Task.h \
 			Task.cc \
 			OBJ.cc \
 			FIF.cc \
 			JTL.cc \
+			JTLExt.cc \
 			TIL.cc \
 			ICC.cc \
 			CVT.cc \
 			Zoomify.cc \
 			DeepZoom.cc \
+			DeepZoomExt.cc \
 			SPECTRA.cc \
 			PFL.cc \
 			IIIF.cc \

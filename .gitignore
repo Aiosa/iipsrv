@@ -3,6 +3,8 @@
 *~
 Makefile
 doc/html
+/build
+.idea
 
 # Files made by autogen.sh.
 Makefile.in
@@ -19,3 +21,5 @@ libtool
 /missing
 /src/.deps/
 fcgi/libfcgi/.deps/
+.vscode/c_cpp_properties.json
+.vscode/settings.json

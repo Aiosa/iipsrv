@@ -24,6 +24,8 @@
 
 
 #include <string>
+#include <tuple>
+#include <vector>
 
 #include "IIPImage.h"
 #include "IIPResponse.h"
@@ -36,7 +38,7 @@
 #include "Watermark.h"
 #include "Transforms.h"
 #include "Logger.h"
-#ifdef HAVE_PNG
+#ifdef HAVE_PNG //FIXME-aiosa check removed?
 #include "PNGCompressor.h"
 #endif
 #ifdef HAVE_WEBP
@@ -69,7 +71,7 @@ typedef HASHMAP <std::string,IIPImage> imageCacheMapType;
 struct Session {
   IIPImage **image;
   JPEGCompressor* jpeg;
-#ifdef HAVE_PNG
+#ifdef HAVE_PNG  //FIXME-aiosa check removed?
   PNGCompressor* png;
 #endif
 #ifdef HAVE_WEBP
@@ -241,6 +243,27 @@ class JTL : public Task {
   void send( Session* session, int resolution, int tile );
 };
 
+typedef struct CompressedTile
+{
+    RawTile rawtile;
+    unsigned int compressedLen;
+} CompressedTile;
+
+// JPEG Tile Export Command - extended
+class JTL_Ext : public Task
+{
+public:
+    void run(Session *session, const std::string &argument);
+
+    CompressedTile getTile(Session *session, int resolution, int tile);
+
+    void send(Compressor *compressor,
+              const std::vector<CompressedTile> &compressedTiles,
+              const std::vector<int> &invalidPathIndices);
+    void sendZip(Compressor *compressor,
+                 const std::vector<CompressedTile> &compressedTiles,
+                 const std::vector<int> &invalidPathIndices);
+};
 
 /// PNG Tile Command
 class PTL : public JTL {
@@ -351,6 +374,12 @@ class DeepZoom : public Task {
   void run( Session* session, const std::string& argument );
 };
 
+/// DeepZoomExt Request Command
+class DeepZoomExt : public Task
+{
+public:
+    void run(Session *session, const std::string &argument);
+};
 
 /// IIIF Command
 class IIIF : public Task {

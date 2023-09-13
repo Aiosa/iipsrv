@@ -50,7 +50,7 @@ void CVT::send( Session* session ){
   // Set up our output format handler
   Compressor *compressor = NULL;
   if( session->view->output_format == JPEG ) compressor = session->jpeg;
-#ifdef HAVE_PNG
+#ifdef HAVE_PNG  //FIXME-aiosa disabled check?
   else if( session->view->output_format == PNG ) compressor = session->png;
 #endif
 #ifdef HAVE_WEBP

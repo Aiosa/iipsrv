@@ -71,7 +71,7 @@ void FIF::run( Session* session, const string& src ){
 
   // Get our image pattern variable
   string filesystem_prefix = Environment::getFileSystemPrefix();
-  string filesystem_suffix = Environment::getFileSystemSuffix();
+  string filesystem_suffix = Environment::getFileSystemSuffix(); //FIXME-aiosa left here line, and derived lines
 
   // Get our image pattern variable
   string filename_pattern = Environment::getFileNamePattern();
@@ -89,7 +89,7 @@ void FIF::run( Session* session, const string& src ){
       test = IIPImage( argument );
       test.setFileNamePattern( filename_pattern );
       test.setFileSystemPrefix( filesystem_prefix );
-      test.setFileSystemSuffix( filesystem_suffix );
+      test.setFileSystemSuffix( filesystem_suffix ); //FIXME-aiosa left here line, and derived lines
       test.Initialise();
     }
     // If not, look up our object
@@ -108,7 +108,7 @@ void FIF::run( Session* session, const string& src ){
 	test = IIPImage( argument );
 	test.setFileNamePattern( filename_pattern );
 	test.setFileSystemPrefix( filesystem_prefix );
-	test.setFileSystemSuffix( filesystem_suffix );
+	test.setFileSystemSuffix( filesystem_suffix ); //FIXME-aiosa left here line, and derived lines
 	test.Initialise();
 	// Delete items if our list of images is too long.
 	if( session->imageCache->size() >= MAXIMAGECACHE ) session->imageCache->erase( session->imageCache->begin() );
@@ -133,9 +133,12 @@ void FIF::run( Session* session, const string& src ){
         *(session->logfile) << "FIF :: JPEG2000 image detected" << endl;
 #if defined(HAVE_KAKADU)
       *session->image = new KakaduImage( test );
+
+      //FIXME-aiosa erased, left here
       if( session->codecOptions["KAKADU_READMODE"] ){
 	((KakaduImage*)*session->image)->kdu_readmode = (KakaduImage::KDU_READMODE) session->codecOptions["KAKADU_READMODE"];
       }
+      //FIXME end
 #elif defined(HAVE_OPENJPEG)
       *session->image = new OpenJPEGImage( test );
 #endif

@@ -141,6 +141,8 @@ void TPTImage::loadImageInfo( int seq, int ang )
   tile_widths.clear();
   tile_heights.clear();
 
+  //FIXME-aiosa removed subifd implementation, part of iipsrv now
+
   // Store the list of image dimensions available, starting with the full resolution
   image_widths.push_back( w );
   image_heights.push_back( h );

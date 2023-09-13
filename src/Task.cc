@@ -403,6 +403,7 @@ void JTL::run( Session* session, const string& argument ){
   this->send( session, resolution, tile );
 }
 
+void JTL_Ext::run(Session *session, const string &argument) {}
 
 void SHD::run( Session* session, const string& argument ){
 

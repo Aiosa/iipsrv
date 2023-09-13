@@ -354,7 +354,7 @@ int main( int argc, char *argv[] )
     logfile << "Setting filesystem prefix to '" << filesystem_prefix << "'" << endl;
     logfile << "Setting filesystem suffix to '" << filesystem_suffix << "'" << endl;
     logfile << "Setting default JPEG quality to " << jpeg_quality << endl;
-#ifdef HAVE_PNG
+#ifdef HAVE_PNG //FIXME-aiosa disabled check?
     logfile << "Setting default PNG compression level to " << png_quality << endl;
 #endif
 #ifdef HAVE_WEBP
@@ -403,10 +403,10 @@ int main( int argc, char *argv[] )
       string protocol = uri_map_string.substr( pos+2 );
       bool supported_protocol = false;
 
-      // Make sure the command is one of our supported protocols: "IIP", "IIIF", "Zoomify", "DeepZoom"
+      // Make sure the command is one of our supported protocols: "IIP", "IIIF", "Zoomify", "DeepZoom", "DeepZoomExt"
       string prtcl = protocol;
       transform( prtcl.begin(), prtcl.end(), prtcl.begin(), ::tolower );
-      if( prtcl == "iip" || prtcl == "iiif" || prtcl == "zoomify" || prtcl == "deepzoom" ){
+      if( prtcl == "iip" || prtcl == "iiif" || prtcl == "zoomify" || prtcl == "deepzoom" || prtcl == "deepzoomext"){
 	supported_protocol = true;
       }
 
@@ -575,7 +575,7 @@ int main( int argc, char *argv[] )
     //  so that we can close the image on exceptions
     IIPImage *image = NULL;
     JPEGCompressor jpeg( jpeg_quality );
-#ifdef HAVE_PNG
+#ifdef HAVE_PNG //FIXME-aiosa commented out?
     PNGCompressor png( png_quality );
 #endif
 #ifdef HAVE_WEBP
@@ -606,7 +606,7 @@ int main( int argc, char *argv[] )
       session.response = &response;
       session.view = &view;
       session.jpeg = &jpeg;
-#ifdef HAVE_PNG
+#ifdef HAVE_PNG //FIXME-aiosa commented out?
       session.png = &png;
 #endif
 #ifdef HAVE_WEBP
@@ -653,6 +653,24 @@ int main( int argc, char *argv[] )
 	}
       }
 #endif
+
+    // Try to get request string using POST
+    // inspired by http://chriswu.me/blog/getting-request-uri-and-content-in-c-plus-plus-fcgi/
+    if (request_string.empty()) {
+        char *contentLengthString = FCGX_GetParam("CONTENT_LENGTH", request.envp);
+        int contentLength;
+        if (contentLengthString) {
+            contentLength = atoi(contentLengthString);
+        } else {
+            contentLength = 0;
+        }
+        char *contentBuffer = new char[contentLength];
+        FCGX_GetStr(contentBuffer, contentLength, request.in);
+
+        string content(contentBuffer, contentLength);
+        delete [] contentBuffer;
+        request_string = content;
+    }
 
       // If the request string hasn't been set through a URI map, get it from the QUERY_STRING variable
       if( request_string.empty() ){

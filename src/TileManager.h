@@ -27,7 +27,7 @@
 #include "RawTile.h"
 #include "IIPImage.h"
 #include "JPEGCompressor.h"
-#ifdef HAVE_PNG
+#ifdef HAVE_PNG //FIXME-aiosa disabled check
 #include "PNGCompressor.h"
 #endif
 #ifdef HAVE_WEBP
