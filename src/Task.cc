@@ -69,6 +69,7 @@ Task* Task::factory( const string& t ){
   else if( type == "pfl" ) return new PFL;
   else if( type == "lyr" ) return new LYR;
   else if( type == "deepzoom" ) return new DeepZoom;
+  else if( type == "deepzoomext" ) return new DeepZoomExt;
   else if( type == "ctw" ) return new CTW;
   else if( type == "col" ) return new COL;
   else if( type == "cnv" ) return new CNV;
