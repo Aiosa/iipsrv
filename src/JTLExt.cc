@@ -132,14 +132,12 @@ void JTL_Ext::sendZip(Compressor *compressor,
     int tileCount = compressedTiles.size() + invalidPathIndices.size();
 
     int32_t err = MZ_OK;
-    void *mem_stream = NULL;
-    void *handle = NULL;
+    void *mem_stream = mz_stream_mem_create();
+    void *handle = mz_zip_writer_create();
 
-    mz_stream_mem_create(&mem_stream);
     mz_stream_mem_set_grow_size(mem_stream, (16 * 1024));
     mz_stream_open(mem_stream, NULL, MZ_OPEN_MODE_CREATE);
 
-    mz_zip_writer_create(&handle);
     err = mz_zip_writer_open(handle, mem_stream, 0); //0 - create
     if (err != MZ_OK) {
         *(session->logfile) << "JTLExt :: Failed to open zip writer! Error: " << err << endl;
@@ -189,7 +187,7 @@ void JTL_Ext::sendZip(Compressor *compressor,
     }
 
     int32_t mem_stream_size = 0;
-    mz_stream_mem_seek(mem_stream, 0, 0);
+    mz_stream_mem_seek(mem_stream, 0, MZ_SEEK_SET);
     mz_stream_mem_get_buffer_length(mem_stream, &mem_stream_size);
     *(session->logfile) << "JTLExt :: Total size: " << mem_stream_size << endl;
 
@@ -203,7 +201,7 @@ void JTL_Ext::sendZip(Compressor *compressor,
     *(session->logfile) << "JTLExt :: Write stream size   " << mem_stream_size << endl;
 
     std::unique_ptr<char[]> out_buff(new char[mem_stream_size]);
-    mz_stream_mem_seek(mem_stream, 0, 0);
+    mz_stream_mem_seek(mem_stream, 0, MZ_SEEK_SET);
     char* buff_ptr = out_buff.get();
     if ((err = mz_stream_mem_read(mem_stream, buff_ptr, mem_stream_size)) != mem_stream_size) {
         *(session->logfile) << "JTLExt :: Output reading failed! Read only " << err << " out of " << mem_stream_size << endl;
