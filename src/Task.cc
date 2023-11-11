@@ -596,38 +596,38 @@ void CNV::run( Session* session, const string& src ){
 
   if( ctype == "sobel" ){
     session->view->convolution = { -1, 0, +1,
-                                   -2, 0, +2,
-                                   -1, 0, +1 };
+				   -2, 0, +2,
+				   -1, 0, +1 };
   }
   else if( ctype == "prewitt" ){
     session->view->convolution = { +1, 0, -1,
-                                   +1, 0, -1,
-                                   +1, 0, -1 };
+				   +1, 0, -1,
+				   +1, 0, -1 };
   }
   else if( ctype == "scharr" ){
     session->view->convolution = { -3, 0, +3,
-                                  -10, 0, 10,
-                                   -3, 0, +3 };
+				  -10, 0, 10,
+				   -3, 0, +3 };
   }
   else if( ctype == "laplace" ){
     session->view->convolution = { -1, -1, -1,
-                                   -1, +8, -1,
-                                   -1, -1, -1 };
+				   -1, +8, -1,
+				   -1, -1, -1 };
   }
   else if( ctype == "gaussian" ){
     session->view->convolution = { 1, 2, 1,
-                                   2, 4, 2,
-                                   1, 2, 1 };
+				   2, 4, 2,
+				   1, 2, 1 };
   }
   else if( ctype == "sharpen" ){
     session->view->convolution = {  0, -1,  0,
-                                   -1,  5, -1,
-                                    0, -1,  0 };
+				   -1,  5, -1,
+				    0, -1,  0 };
   }
   else if( ctype == "emboss" ){
     session->view->convolution = { -2, -1, 0,
-                                   -1, 1, 1,
-                                    0, 1, 2 };
+				   -1,  1, 1,
+				    0,  1, 2 };
   }
   else{
 

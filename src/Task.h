@@ -18,7 +18,6 @@
     Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
-
 #ifndef _TASK_H
 #define _TASK_H
 
@@ -384,6 +383,7 @@ public:
 /// IIIF Command
 class IIIF : public Task {
  public:
+  static std::string delimiter;
   void run( Session* session, const std::string& argument );
 };
 

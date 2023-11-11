@@ -2,12 +2,8 @@
 
 noinst_PROGRAMS =	iipsrv.fcgi
 
-
-INCLUDES =		@INCLUDES@ @LIBFCGI_INCLUDES@ @JPEG_INCLUDES@ @TIFF_INCLUDES@
-LIBS =			@LIBS@ @LIBFCGI_LIBS@ @DL_LIBS@ @JPEG_LIBS@ @TIFF_LIBS@ -lm -lminizip-ng
-AM_LDFLAGS =		@LIBFCGI_LDFLAGS@
-
 iipsrv_fcgi_LDADD = Main.o
+
 
 if ENABLE_KAKADU
 iipsrv_fcgi_LDADD += KakaduImage.o @KAKADU_OBJS@
@@ -79,3 +75,11 @@ iipsrv_fcgi_SOURCES = \
 			Watermark.cc \
 			Logger.h \
 			Memcached.h
+
+
+# Rename and install/uninstall to /sbin/
+install-exec-local:
+	$(INSTALL_PROGRAM) -m 755 iipsrv.fcgi "$(DESTDIR)$(sbindir)/iipsrv"
+
+uninstall-local:
+	rm -f "$(DESTDIR)$(sbindir)/iipsrv"

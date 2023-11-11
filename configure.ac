@@ -1,122 +1,125 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT( [iipsrv], [1.2], [ruven@users.sourceforge.net] )
-AC_CONFIG_MACRO_DIRS([m4])
+AC_INIT([iipsrv],[1.3],[ruven@users.sourceforge.net],[iipsrv],[https://iipimage.sourceforge.io])
+AC_MSG_RESULT([Configuring iipsrv ...
+])
+AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 
 
-AC_PREFIX_DEFAULT( `pwd` )
-
-
 # Checks for programs.
-AC_PROG_CXX
-AC_PROG_AWK
 AC_PROG_CC
-AC_PROG_CPP
+AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-AM_PROG_CC_C_O
 
-AC_HEADER_STDBOOL
 AC_C_INLINE
 AC_TYPE_SIZE_T
+AC_TYPE_UINT8_T
+AC_TYPE_UINT32_T
 
 LT_INIT
 
 
-# Checks for header files.
-AC_CHECK_HEADERS(glob.h)
+# Checks for header specific files
+AC_CHECK_HEADERS(sys/stat.h)
 AC_CHECK_HEADERS(time.h)
 AC_CHECK_HEADERS(sys/time.h)
 AC_CHECK_HEADERS(syslog.h, [LOGGING="file, syslog"], [LOGGING="file"])
-AC_FUNC_MALLOC
-AC_CHECK_LIB(m, log2, AC_DEFINE(HAVE_LOG2))
+
+# Checks for libraries and functions
+AC_SEARCH_LIBS([pow], [m])
+AC_CHECK_LIB([m], [log2], [AC_DEFINE(HAVE_LOG2)])
 AC_CHECK_FUNCS([setenv])
+AC_FUNC_MALLOC
 
-AC_LANG_SAVE
-AC_LANG_CPLUSPLUS
-AC_CHECK_HEADERS(ext/pool_allocator.h)
-AC_LANG_RESTORE
+# Allow user to disable glob
+AC_ARG_ENABLE([glob],[  --disable-glob          disable globbing])
+if test "x$enable_glob" == "xno"; then
+  AC_MSG_RESULT([configure: glob support disabled])
+else
+  AC_CHECK_HEADERS(glob.h)
+fi
 
-# Checks for various hash map implementations
-AC_CXX_HEADER_UNORDERED_MAP
-AC_HEADER_TR1_UNORDERED_MAP
-AX_CXX_HAVE_EXT_HASH_MAP
 
 # For our windows build
 AC_CHECK_HEADERS(windows.h)
 
-# we want largefile support, if possible
+# We want largefile support, if possible
 AC_SYS_LARGEFILE
 
 # Check for C99 isfinite function
 AX_CXX_HAVE_ISFINITE
 
+
+# Pthread support
+AX_PTHREAD
+CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
+LIBS="$PTHREAD_LIBS $LIBS"
+
+
 # Check for OpenMP
 AC_OPENMP
 OPENMP=false
 AS_IF([test "x$enable_openmp" != "xyes"], [
- INCLUDES="$INCLUDES $OPENMP_CFLAGS"
- LIBS="$LIBS $OPENMP_CFLAGS"
+ AM_CXXFLAGS="${OPENMP_CFLAGS} ${AM_CXXFLAGS}"
  OPENMP=true
 ])
 
-# Check for C++11 chrono timers
+
+# Check for C++ chrono timers and availability of various hash map implementations
 AC_LANG_PUSH([C++])
-AC_CHECK_HEADER([chrono], [AC_DEFINE(HAVE_STL_CHRONO)])
+AC_CHECK_HEADERS(ext/pool_allocator.h)
+AC_CHECK_HEADERS([chrono])
+AC_CHECK_HEADERS([unordered_map])
+AC_CHECK_HEADERS([tr1/unordered_map])
+AC_CHECK_HEADERS([ext/hash_map])
+AX_CXX_COMPILE_STDCXX(11)
 AC_LANG_POP([C++])
 
 
-#************************************************************
 # Enable debugging
-
-AC_ARG_ENABLE([debug],
-     [  --enable-debug          turn on debugging],
-     [case "${enableval}" in
-       yes) debug=true ;;
-       no)  debug=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
-     esac],[debug=false])
-AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
-
-
-
-#************************************************************
-# Check for libjpeg
-
-FIND_JPEG(,[AC_MSG_ERROR([libjpeg not found])])
+AC_ARG_ENABLE([debug-mode],
+              [  --enable-debug-mode     enable debugging mode (no FCGI)],
+              [AC_DEFINE(DEBUG)
+	       AC_DEFINE(KAKADU_DEBUG)
+               AC_DEFINE(OPENJPEG_DEBUG)
+               DEBUG=true
+	       AC_MSG_RESULT([configure: enabling debug mode])]
+)
 
 
 
-#************************************************************
-# Check for a standard libz
 
-AC_SEARCH_LIBS(gzopen, z)
-
+# Check for libtiff and libjpeg
+AX_CHECK_LIBTIFF
+AX_CHECK_LIBJPEG
 
 
 #************************************************************
 # Check for libmemcached
+#************************************************************
+AC_ARG_ENABLE([libmemcached],[  --disable-libmemcached  disable libmemcached support])
+if test "x$enable_libmemcached" == "xno"; then
+  MEMCACHED=false
+  AC_MSG_RESULT([configure: libmemcached support disabled])
+else
+  AC_CHECK_HEADER( [libmemcached/memcached.h],
+	[AC_SEARCH_LIBS( [memcached_create],
+		[memcached],
+		[MEMCACHED=true],
+		[MEMCACHED=false],
+		[-lpthread] )],
+	[MEMCACHED=false]
+  )
 
-AC_CHECK_HEADER( libmemcached/memcached.h,
-	AC_SEARCH_LIBS( memcached_create,
-		memcached,
-		MEMCACHED=true,
-		MEMCACHED=false,
-		-lpthread ),
-	MEMCACHED=false
-)
-if test "x${MEMCACHED}" = xtrue; then
+  if test "x${MEMCACHED}" = xtrue; then
 	AC_DEFINE(HAVE_MEMCACHED)
-	LIBS="$LIBS -lpthread"
+  fi
 fi
 
 
-#************************************************************
-# Check for libtiff
-
-FIND_TIFF(,[AC_MSG_ERROR([libtiff not found])])
 
 
 #************************************************************
@@ -130,33 +133,6 @@ FIND_TIFF(,[AC_MSG_ERROR([libtiff not found])])
 #LCMS=false
 
 
-#************************************************************
-# Check for user specified locations for fast cgi library
-
-AC_ARG_WITH( fcgi-incl,
-   [  --with-fcgi-incl=DIR          location of the fcgi include files],
-   [LIBFCGI_INCLUDES="-I$withval"]
-)
-
-AC_ARG_WITH( fcgi-lib,
-   [  --with-fcgi-lib=DIR           location of the fcgi libraries],
-   [LIBFCGI_LDFLAGS="-L$withval"]
-)
-
-AC_CHECK_LIB( fcgi, FCGI_Accept,
-		AC_MSG_RESULT([configure: using system libfcgi]);
-			LIBFCGI_LIBS="-lfcgi",
-		AC_MSG_RESULT([configure: unable to find system libfcgi - using bundled version]);
-			LIBFCGI_INCLUDES="-I../fcgi/include -I../fcgi";
-			LIBFCGI_LIBS="../fcgi/libfcgi/libfcgi.a"
-)
-
-AC_SUBST(LIBFCGI_INCLUDES)
-AC_SUBST(LIBFCGI_LDFLAGS)
-AC_SUBST(LIBFCGI_LIBS)
-
-
-
 
 #************************************************************
 #     Check for PNG support
@@ -168,22 +144,22 @@ AC_ARG_ENABLE( png,
 
 
 if test "x$enable_png" == "xno"; then
-   AC_MSG_RESULT([disabling PNG support])
+   AC_MSG_RESULT([configure: disabling PNG support])
    AM_CONDITIONAL([ENABLE_PNG], [false])
 else
-   AC_CHECK_HEADER( png.h,
-     AC_SEARCH_LIBS(
-       png_create_write_struct,
-       png,
-       PNG=true,
-       PNG=false )
-     )
-     if test "x${PNG}" = xtrue; then
+   AC_CHECK_HEADER( [png.h],
+     [AC_SEARCH_LIBS(
+       [png_create_write_struct],
+       [png],
+       [PNG=true],
+       [PNG=false] )]
+   )
+   if test "x${PNG}" = xtrue; then
 	AM_CONDITIONAL([ENABLE_PNG], [true])
 	AC_DEFINE(HAVE_PNG)
-     else
+   else
 	AM_CONDITIONAL([ENABLE_PNG], [false])
-     fi
+   fi
 fi
 
 
@@ -193,14 +169,14 @@ fi
 
 WEBP=false
 AC_ARG_ENABLE( webp,
-    [  --disable-webp           disable WebP])
+    [  --disable-webp          disable WebP])
 
 
 if test "x$enable_webp" == "xno"; then
-   AC_MSG_RESULT([disabling WebP support])
+   AC_MSG_RESULT([configure: disabling WebP support])
    AM_CONDITIONAL([ENABLE_WEBP], [false])
 else
-   AC_CHECK_HEADER( webp/encode.h, [WEBP=true], [WEBP=false] )
+   AC_CHECK_HEADER( [webp/encode.h], [WEBP=true], [WEBP=false] )
    AC_SEARCH_LIBS( [WebPEncode], [webp], [WEBP=true], [WEBP=false] )
    AC_SEARCH_LIBS( [WebPMuxAssemble], [webpmux], [WEBP=true], [WEBP=false] )
 
@@ -264,10 +240,10 @@ if test -n "$kakadu_path"; then
 
 	if test "x${KAKADU}" = xtrue; then
 		AC_DEFINE(HAVE_KAKADU)
-		INCLUDES="$INCLUDES -I$kakadu_path/managed/all_includes/"
+		AM_CXXFLAGS="-I$kakadu_path/managed/all_includes/ ${AM_CXXFLAGS}"
 		KAKADU_OBJS="$kakadu_path/apps/make/jpx.o $kakadu_path/apps/make/jp2.o $kakadu_path/apps/make/kdu_stripe_decompressor.o"
 		kakadu_lib_name=`basename $kakadu_path/apps/make/*.so | sed 's/^lib//' | sed 's/.so$//'`
-		LIBS="$LIBS -L$kakadu_path/apps/make -l$kakadu_lib_name -lpthread"
+		LIBS="$LIBS -L$kakadu_path/apps/make -l$kakadu_lib_name"
 
 		# Check for SSSE3 support in Kakadu
 		AC_CHECK_FILE( $kakadu_path/apps/make/ssse3_stripe_transfer.o,
@@ -309,8 +285,6 @@ if test -n "$kakadu_path"; then
 
 		JPEG2000_CODEC="true (Kakadu)"
 
-		INCLUDES="$INCLUDES -I."
-		AC_SUBST(INCLUDES)
 		AC_SUBST(KAKADU_OBJS)
 
 		AC_LANG_PUSH([C++])
@@ -368,14 +342,14 @@ else
 		        AC_MSG_RESULT([configure: No OpenJPEG sources found])
 		    )
 		    if test "x$OPENJPEG" = xtrue; then
-		        INCLUDES="$INCLUDES -I$openjpeg_path/src/lib/openjp2/"
-		        LIBS="$LIBS $openjpeg_path/bin/libopenjp2.so -lpthread"
+		        AM_CXXFLAGS="-I$openjpeg_path/src/lib/openjp2/ ${AM_CXXFLAGS}"
+		        LIBS="$LIBS $openjpeg_path/bin/libopenjp2.so"
 		    fi
 		else
 		    PKG_CHECK_MODULES([OPENJPEG], [libopenjp2], [OPENJPEG=true], [OPENJPEG=false])
 		    if test "x$OPENJPEG" = xtrue; then
-		        INCLUDES="$INCLUDES $OPENJPEG_CFLAGS"
-		        LIBS="$LIBS $OPENJPEG_LIBS"
+		        AM_CXXFLAGS="${OPENJPEG_CFLAGS} ${AM_CXXFLAGS}"
+		        LIBS="$LIBS ${OPENJPEG_LIBS}"
 		    else
 			AC_MSG_RESULT([configure: Unable to find OpenJPEG development files])
 		    fi
@@ -385,8 +359,6 @@ else
 		    AC_DEFINE(HAVE_OPENJPEG)
 		    JPEG2000_CODEC="true (OpenJPEG)"
 		    AM_CONDITIONAL([ENABLE_OPENJPEG], [test x$OPENJPEG = xtrue])
-		    AC_SUBST(INCLUDES)
-		    AC_SUBST(LIBS)
 		else
 		    AM_CONDITIONAL([ENABLE_OPENJPEG], [false])
 		fi
@@ -398,58 +370,88 @@ fi
 
 
 #************************************************************
-#     FCGI library configure
+#     Check for FCGI library
 #************************************************************
 
-AC_LANG([C++])
-
-# autoconf defaults CXX to 'g++', so its unclear whether it exists/works
-AC_MSG_CHECKING([whether $CXX works])
-AC_TRY_COMPILE([#include <iostream>],
-               [std::cout << "ok";],
-               [AC_MSG_RESULT(yes)
-                LIBFCGIXX=libfcgi++.la
-                ECHO_CPP=echo-cpp${EXEEXT}
-                AC_MSG_CHECKING([whether cin has a streambuf assignment operator])
-                AC_TRY_COMPILE([#include <iostream>],
-                               [cin = static_cast<streambuf *>(0);],
-                               [AC_MSG_RESULT(yes)
-                                AC_DEFINE([HAVE_IOSTREAM_WITHASSIGN_STREAMBUF],  [1],
-                                          [Define if cin/cout/cerr has a streambuf assignment operator])],
-                               [AC_MSG_RESULT(no)])
-                AC_MSG_CHECKING([whether char_type is defined in the context of streambuf])
-                AC_TRY_COMPILE([#include <iostream>],
-                               [class fcgi_streambuf : public std::streambuf { char_type ct; }],
-                               [AC_MSG_RESULT(yes)
-                                AC_DEFINE([HAVE_STREAMBUF_CHAR_TYPE], [1],
-                                          [Define if char_type is defined in the context of streambuf])],
-                               [AC_MSG_RESULT(no)])],
-               [AC_MSG_RESULT(no)])
-AC_SUBST(LIBFCGIXX)
-AC_SUBST(ECHO_CPP)
-
-AC_LANG([C])
-
-AC_CHECK_LIB([nsl],       [gethostbyname])
-AC_CHECK_LIB([socket],    [socket])
+AC_CHECK_HEADER([fcgiapp.h],
+	[AC_CHECK_LIB(
+		[fcgi],
+		[FCGI_Accept],
+		[BUILD_FCGI=false],
+		[BUILD_FCGI=true])],
+	[BUILD_FCGI=true]
+)
+if test "x${BUILD_FCGI}" = xtrue; then
+	AC_MSG_RESULT([configure: unable to find libfcgi - using bundled version])
+	AC_CHECK_LIB([nsl],       [gethostbyname])
+	AC_CHECK_LIB([socket],    [socket])
+	FCGI_COMMON_CHECKS
+	AC_REPLACE_FUNCS([strerror])
+	AM_CXXFLAGS="-I../fcgi/include -I../fcgi ${AM_CXXFLAGS}"
+	LIBS="../fcgi/libfcgi/libfcgi.a $LIBS"
+	AM_CONDITIONAL([BUNDLED_FCGI], [true])
+else
+	LIBS="$LIBS -lfcgi"
+	AM_CONDITIONAL([BUNDLED_FCGI], [false])
+fi
 
 
-ACX_PTHREAD([THREADED=threaded${EXEEXT}])
-AC_SUBST([THREADED])
+#************************************************************
+#     Zip + Vips extension (reading options from args)
+#     can override lib location: IIP_MINIZIP_LOCATION
+#     can override lib name:     IIP_MINIZIP_LIBRARY
+#************************************************************
+# Add Vips
+
+AC_ARG_WITH([vips], [AS_HELP_STRING([--with-vips], [build with vips support])],
+    [vips=yes], [vips=no])
+
+if [test "x$vips" == xyes]; then
+    LIBS="$(pkg-config vips-cpp --libs) $LIBS"
+    AM_CXXFLAGS="$(pkg-config vips-cpp --cflags) ${AM_CXXFLAGS}"
+fi
+
+MINIZIP_NG_LOCATION=${IIP_MINIZIP_LOCATION:-"../../minizip-ng"}
+MINIZIP_NG_NAME=${IIP_MINIZIP_LIBRARY:-"minizip-ng"}
+echo "MINIZIP_NG_LOCATION $MINIZIP_NG_LOCATION"
+echo "MINIZIP_NG_NAME $MINIZIP_NG_NAME"
+
+# Creates automatically $with_minizip
+AC_ARG_WITH([minizip], [AS_HELP_STRING([--with-minizip],
+    [build with minizip support: use --with-minizip=<path/to/libminizip.a>])],
+    [minizip_ng_lib_path="$with_minizip"], [minizip_ng_lib_path=""])
+
+echo "minizip_ng_lib_path $minizip_ng_lib_path"
+
+if [[ ! -z $minizip_ng_lib_path ]]; then
+    # Extract directory path
+    MINIZIP_NG_LOCATION="$(dirname "$minizip_ng_lib_path")"
+    # Extract basename and remove suffix and lib prefix
+    MINIZIP_NG_NAME="$(basename "$minizip_ng_lib_path")"
+    MINIZIP_NG_NAME="${MINIZIP_NG_NAME%.*}"
+    MINIZIP_NG_NAME=${MINIZIP_NG_NAME#lib}
+fi
+
+if [[ ! -f "${MINIZIP_NG_LOCATION}/lib${MINIZIP_NG_NAME}.a" ]]; then
+    echo "Minizip library not found: '${MINIZIP_NG_LOCATION}/${MINIZIP_NG_NAME}.a'"
+    echo "The IIPServer will compile without minizip and DeepZoomExt support for zipping."
+else
+    echo "Using Minizip library: '${MINIZIP_NG_LOCATION}/${MINIZIP_NG_NAME}.a'"
+    AC_DEFINE(HAVE_MINIZIP_NG)
+    LIBS="-l${MINIZIP_NG_NAME} $LIBS"
+    AM_CXXFLAGS="-I${MINIZIP_NG_LOCATION} ${AM_CXXFLAGS}"
+    AM_LDFLAGS="-L${MINIZIP_NG_LOCATION} ${AM_LDFLAGS}"
+fi
 
 
-FCGI_COMMON_CHECKS
 
-AC_REPLACE_FUNCS([strerror])
-
-
-SYSTEM=unix
-AC_SUBST([SYSTEM])
-
-AC_PROG_CC_WARNINGS
-
+# Pass flags to Makefiles
+AC_SUBST(AM_CXXFLAGS)
+AC_SUBST(AM_LDFLAGS)
 AC_SUBST(LIBS)
 
+
+# Generate Make files
 AC_PROG_MAKE_SET
 AC_CONFIG_FILES([Makefile \
 	src/Makefile \
@@ -459,14 +461,21 @@ AC_CONFIG_FILES([Makefile \
 	fcgi/libfcgi/Makefile])
 AC_OUTPUT
 
+
 # Print out option status
 AC_MSG_RESULT([
 Options Enabled:
----------------
+--------------------------------
  Memcached   :  ${MEMCACHED}
  JPEG2000    :  ${JPEG2000_CODEC}
  OpenMP      :  ${OPENMP}
  Loggers     :  ${LOGGING}
  PNG Output  :  ${PNG}
- WebP Output :  ${WEBP}
+ WebP Output :  ${WEBP}])
+
+if [test "x${DEBUG}" = xtrue]; then
+  AC_MSG_RESULT([ Debug mode  :  activated])
+fi
+
+AC_MSG_RESULT([--------------------------------
 ])

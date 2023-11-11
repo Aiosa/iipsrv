@@ -1,3 +1,37 @@
+01/11/2023:
+	- Further update of configure.ac and complete re-write of libtiff and libjpeg m4 autoconf scripts.
+	  This fixes error with clang16 and eliminates all autoconf warnings. make install now also works
+	  correctly and renames and copies iipsrv.fcgi to ${sbin}/iipsrv
+
+
+19/10/2023:
+	- Added new IIIF_DELIMITER configuration parameter to enable page or stack slice selection. Now disabled
+	  by default unless IIIF_DELIMITER is set. Resolves: https://github.com/ruven/iipsrv/issues/261
+
+
+03/10/2023:
+	- Cleanup of autoconf C++ checks and added conditional building of FCGI
+	- Fixes for compilation errors on Mac OS X / clang
+
+
+26/09/2023:
+	- Fix to bug introduced by debug mode change: request_string needs to be cleared at top of FCGI while loop.
+	- Added --enable-debug-mode option to configure script.
+
+
+22/09/2023:
+	- Removed the max size limit from IIIF info.json sizes array. This now provides the full list of resolution sizes
+	  with the maxWidth and maxHeight variables specifying the maximum available export size.
+
+
+21/09/2023:
+	- Major update of debug mode to allow requests to be made directly on the command line using standard input with
+	  output sent directly to a file without the need for a web server or FCGI. Debug mode activated when DEBUG
+	  defined in pre-processor during compilation.
+	  Also updated debugging information handling for both JPEG2000 codecs, which are now activated through separate
+	  KAKADU_DEBUG and OPENJPEG_DEBUG defines.
+
+
 11/09/2023:
 	- Added extra check for untiled TIFF images
 
@@ -16,7 +50,7 @@
 19/06/2023:
 	- Harmonized iipsrv identity string between JPEG and PNG.
 	- Added ability to choose a particular page or slice in an image stack when using IIIF by using
-	  a comma delimitter after the file name. For example: /image.tif,5/full/500/0/default.jpg (6th page)
+	  a comma delimiter after the file name. For example: /image.tif,5/full/500/0/default.jpg (6th page)
 
 
 05/06/2023:

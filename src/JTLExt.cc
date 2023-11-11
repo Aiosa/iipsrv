@@ -16,19 +16,24 @@
 
 #include "Task.h"
 #include "Transforms.h"
+
+#ifdef HAVE_VIPS
 #include <vips/vips8>
+#endif
 
 #include <cmath>
 #include <sstream>
 #include <algorithm>
 #include <memory>
 
+#ifdef HAVE_MINIZIP_NG
 #include "mz.h"
 #include "mz_strm.h"
 #include "mz_strm_mem.h"
 #include "mz_zip.h"
 #include "mz_os.h"
 #include "mz_zip_rw.h"
+#endif
 
 using namespace std;
 
@@ -43,6 +48,8 @@ void JTL_Ext::send(Compressor *compressor,
 
     char *buffer;
     size_t bufferSize = 0;
+
+#ifdef HAVE_VIPS
     // Append images vertically if needed
     if (tileCount > 1)
     {
@@ -121,6 +128,10 @@ void JTL_Ext::send(Compressor *compressor,
             *(session->logfile) << "JTLExt :: Error flushing tile" << endl;
         }
     }
+#else
+    //todo try sending just a single tile using JTL.cc
+    *(session->logfile) << "JTLExt :: Error: vips not available: tiles cannot be joined" << endl;
+#endif
     // Inform our response object that we have sent something to the client
     session->response->setImageSent();
 }
@@ -129,6 +140,8 @@ void JTL_Ext::sendZip(Compressor *compressor,
                       const vector<CompressedTile> &compressedTiles,
                       const vector<int> &invalidPathIndices)
 {
+
+#ifdef HAVE_MINIZIP_NG
     int tileCount = compressedTiles.size() + invalidPathIndices.size();
 
     int32_t err = MZ_OK;
@@ -217,6 +230,12 @@ void JTL_Ext::sendZip(Compressor *compressor,
             *(session->logfile) << "JTLExt :: Error flushing tile" << endl;
         }
     }
+
+#else
+    //todo try sending just a single tile using JTL.cc
+    *(session->logfile) << "JTLExt :: Error: minizip not available: tiles cannot be sent in archive!" << endl;
+#endif
+
     // Inform our response object that we have sent something to the client
     session->response->setImageSent();
 }
