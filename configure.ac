@@ -407,6 +407,7 @@ AC_ARG_WITH([vips], [AS_HELP_STRING([--with-vips], [build with vips support])],
     [vips=yes], [vips=no])
 
 if [test "x$vips" == xyes]; then
+    AC_DEFINE(HAVE_VIPS)
     LIBS="$(pkg-config vips-cpp --libs) $LIBS"
     AM_CXXFLAGS="$(pkg-config vips-cpp --cflags) ${AM_CXXFLAGS}"
 fi

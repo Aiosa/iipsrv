@@ -33,6 +33,10 @@
 #include "OpenJPEGImage.h"
 #endif
 
+#ifdef HAVE_VIPS
+#include "FallbackVipsImage.h"
+#endif
+
 #define MAXIMAGECACHE 1000  // Max number of items in image cache
 
 
@@ -144,6 +148,13 @@ void FIF::run( Session* session, const string& src ){
 #endif
     }
 #endif
+
+#if defined(HAVE_VIPS)
+    else {
+        if( session->loglevel >= 2 ) *(session->logfile) << "Vips fallback image handler" << endl;
+        *session->image = new FallbackVipsImage( test );
+    }
+#else
     else throw string( "Unsupported image type: " + argument );
 
     /* Disable module loading for now!
@@ -179,9 +190,9 @@ void FIF::run( Session* session, const string& src ){
 #endif
     }
     */
+#endif /*HAVE_VIPS*/
 
-
-    // Open image and update timestamp
+      // Open image and update timestamp
     (*session->image)->openImage();
 
     // Check timestamp consistency. If cached timestamp is different, update metadata

@@ -56,6 +56,8 @@ iipsrv_fcgi_SOURCES = \
 			Utils.h \
             Utils.cpp \
 			Writer.h \
+			FallbackVipsImage.h \
+			FallbackVipsImage.cc \
 			Task.h \
 			Task.cc \
 			OBJ.cc \

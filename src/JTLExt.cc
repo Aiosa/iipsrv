@@ -41,15 +41,15 @@ bool contains(const vector<int> &vector, int element);
 
 void JTL_Ext::send(Compressor *compressor,
                    const vector<CompressedTile> &compressedTiles,
-                   const vector<int> &invalidPathIndices)
-{
+                   const vector<int> &invalidPathIndices) {
+
+#ifdef HAVE_VIPS
     stringstream dataStream;
     int tileCount = compressedTiles.size() + invalidPathIndices.size();
 
     char *buffer;
     size_t bufferSize = 0;
 
-#ifdef HAVE_VIPS
     // Append images vertically if needed
     if (tileCount > 1)
     {
