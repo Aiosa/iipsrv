@@ -46,9 +46,9 @@ void FallbackVipsImage::openImage() {
         vips_error_exit(NULL);
     }
 
-    const string& imagePath = getImagePath();
+    const string& imagePath = getFileName(0, 0); //args unused
 
-//todo consider implement testImageType() to support this class and hand-pick formats
+    //todo consider implement testImageType() to support this class and hand-pick formats
     int ext = '.';
     const char* extension = NULL;
     const char* suffix = strrchr(imagePath.c_str(), ext);
