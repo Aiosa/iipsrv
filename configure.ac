@@ -410,6 +410,9 @@ if [test "x$vips" == xyes]; then
     AC_DEFINE(HAVE_VIPS)
     LIBS="$(pkg-config vips-cpp --libs) $LIBS"
     AM_CXXFLAGS="$(pkg-config vips-cpp --cflags) ${AM_CXXFLAGS}"
+    VIPS=true
+else
+    VIPS=false
 fi
 
 MINIZIP_NG_LOCATION=${IIP_MINIZIP_LOCATION:-"../../minizip-ng"}
@@ -436,9 +439,11 @@ fi
 if [[ ! -f "${MINIZIP_NG_LOCATION}/lib${MINIZIP_NG_NAME}.a" ]]; then
     echo "Minizip library not found: '${MINIZIP_NG_LOCATION}/${MINIZIP_NG_NAME}.a'"
     echo "The IIPServer will compile without minizip and DeepZoomExt support for zipping."
+    MINIZIP_NG=false
 else
     echo "Using Minizip library: '${MINIZIP_NG_LOCATION}/${MINIZIP_NG_NAME}.a'"
     AC_DEFINE(HAVE_MINIZIP_NG)
+    MINIZIP_NG=true
     LIBS="-l${MINIZIP_NG_NAME} $LIBS"
     AM_CXXFLAGS="-I${MINIZIP_NG_LOCATION} ${AM_CXXFLAGS}"
     AM_LDFLAGS="-L${MINIZIP_NG_LOCATION} ${AM_LDFLAGS}"
@@ -467,6 +472,9 @@ AC_OUTPUT
 AC_MSG_RESULT([
 Options Enabled:
 --------------------------------
+ Debug       :  ${DEBUG}
+ VIPS        :  ${VIPS}
+ Minizip     :  ${MINIZIP_NG}
  Memcached   :  ${MEMCACHED}
  JPEG2000    :  ${JPEG2000_CODEC}
  OpenMP      :  ${OPENMP}

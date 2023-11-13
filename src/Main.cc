@@ -59,6 +59,10 @@
 #include "DSOImage.h"
 #endif
 
+#ifdef HAVE_VIPS
+#include <vips/vips8>
+#endif
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -1007,6 +1011,9 @@ int main( int argc, char *argv[] )
 
     }
 
+#ifdef HAVE_VIPS
+    vips_shutdown();
+#endif
 
     /* Do some cleaning up etc. here after all the potential exceptions
        have been handled

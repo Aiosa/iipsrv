@@ -24,16 +24,19 @@
 #ifndef _PLAINIMAGE_H
 #define _PLAINIMAGE_H
 
+#include <memory>
+
 #include <vips/vips8>
 
 #include "IIPImage.h"
 
+using namespace std;
 using namespace vips;
 
 class FallbackVipsImage : public IIPImage {
 
 private:
-    VImage imageObject;
+    unique_ptr<VImage> imageObject;
     unsigned int tile_width;
     unsigned int tile_height;
 

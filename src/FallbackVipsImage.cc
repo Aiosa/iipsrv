@@ -21,10 +21,10 @@
 
 #ifdef HAVE_VIPS
 
+
 #include "FallbackVipsImage.h"
 #include "Logger.h"
 
-using namespace std;
 
 // Reference our logging object
 extern Logger logfile;
@@ -34,6 +34,10 @@ FallbackVipsImage::~FallbackVipsImage() {
     //no op
 }
 
+//https://stackoverflow.com/questions/650162/why-cant-the-switch-statement-be-applied-to-strings
+constexpr unsigned int hash_switch(const char *s, int off = 0) {
+    return !s[off] ? 5381 : (hash_switch(s, off+1)*33) ^ s[off];
+}
 
 void FallbackVipsImage::openImage() {
 
@@ -45,27 +49,27 @@ void FallbackVipsImage::openImage() {
     const string& imagePath = getImagePath();
 
 //todo consider implement testImageType() to support this class and hand-pick formats
-
-//    switch (suffix) {
-//        //IIPSrv tests by the binary data /header, not suffix - potentially problematic
-//        case "png":
-//            vips_pngload(imagePath, &imageHandle); break;
-//        case "jpg":
-//        case: "jpeg":
-//            vips_jpegload(imagePath, &imageHandle); break;
-//        case: "webp":
-//            vips_webpload(imagePath, &imageHandle); break;
-//        default:
-//            throw string( "Unsupported image type: " + suffix);
-//    }
+    int ext = '.';
+    const char* extension = NULL;
+    const char* suffix = strrchr(imagePath.c_str(), ext);
+    switch (hash_switch(suffix)) {
+        //IIPSrv tests by the binary data /header, not suffix - potentially problematic
+        case hash_switch(".png"):
+        case hash_switch(".jpg"):
+        case hash_switch(".jpeg"):
+        case hash_switch(".webp"):
+            break; //allow these formats
+        default:
+            throw string( "Unsupported image type: " + string(suffix));
+    }
 
     //let vips load whatever it can (vips_image_new_from_file) and return if success
 
-    imageObject = VImage::new_from_file(imagePath.c_str(),
-                                        VImage::option ()->set ("access", VIPS_ACCESS_SEQUENTIAL));
+    imageObject = make_unique<VImage>(VImage::new_from_file(imagePath.c_str(),
+                                        VImage::option ()->set ("access", VIPS_ACCESS_SEQUENTIAL)));
 
-    const int width = imageObject.width();
-    const int height = imageObject.height();
+    const int width = imageObject->width();
+    const int height = imageObject->height();
     tile_width = width;
     tile_height = height;
     tile_widths.emplace_back(width);
@@ -75,19 +79,9 @@ void FallbackVipsImage::openImage() {
     numResolutions = 1;
 
     colourspace = NONE;
-    switch (imageObject.interpretation()) {
-        case VIPS_INTERPRETATION_sRGB: colourspace = sRGB; break;
-        case VIPS_INTERPRETATION_B_W: colourspace = GREYSCALE; break; //BINARY ignored...
-        case VIPS_INTERPRETATION_LAB: colourspace = CIELAB; break;
-        default:
-            logfile << "Unsupported colour space: conversion to sRGB" << endl;
-            imageObject = imageObject.colourspace(VIPS_INTERPRETATION_sRGB);
-            colourspace = sRGB;
-            break;
-    }
 
-    channels = imageObject.bands();
-    int bandFormat = imageObject.format();
+    channels = imageObject->bands();
+    int bandFormat = imageObject->format();
 // use this instead...    if (vips_band_format_is8bit(bandFormat))
     switch(bandFormat) {
         case VIPS_FORMAT_UCHAR:
@@ -134,9 +128,19 @@ void FallbackVipsImage::closeImage() {
 
 
 RawTile FallbackVipsImage::getTile( int seq, int angle, unsigned int resolution, int layer, unsigned int tile ) {
+    switch (imageObject->interpretation()) {
+        case VIPS_INTERPRETATION_sRGB: colourspace = sRGB; break;
+        case VIPS_INTERPRETATION_B_W: colourspace = GREYSCALE; break; //BINARY ignored...
+        case VIPS_INTERPRETATION_LAB: colourspace = CIELAB; break;
+        default:
+            logfile << "Unsupported colour space: conversion to sRGB" << endl;
+            imageObject = make_unique<VImage>(imageObject->colourspace(VIPS_INTERPRETATION_sRGB));
+            colourspace = sRGB;
+            break;
+    }
 
     const string& imagePath = getImagePath();
-    const void* data = imageObject.data();
+    const void* data = imageObject->data();
     if (data == NULL) {
         //todo find cause of failure some vips error decription function
         throw string( "Unable to read image " + imagePath );
