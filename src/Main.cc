@@ -29,6 +29,7 @@
 #include <utility>
 #include <map>
 #include <algorithm>
+#include <typeinfo>
 #ifdef DEBUG
 #include <iostream>
 #endif
@@ -997,22 +998,30 @@ int main( int argc, char *argv[] )
       }
     }
 
-    catch(char const *error) {
-        logfile << "Error: " << error << endl;
+    /*
+     * Issue readable catch
+     */
+    catch(const std::exception &err) {
+        if( loglevel >= 1 ){
+            logfile << "Error: " << err.what() << endl;
+        }
+
+        /* Display our advertising banner ;-) */
+        writer.putS( response.getAdvert().c_str() );
     }
 
-    /* Default catch
+    /*
+     * Default catch
+     * idea: https://stackoverflow.com/questions/315948/c-catching-all-exceptions
      */
     catch( ... ){
-
-      if( loglevel >= 1 ){
-	logfile << "Error: Default Catch: " << endl << endl;
-      }
-
-      /* Display our advertising banner ;-)
-       */
-      writer.putS( response.getAdvert().c_str() );
-
+        if( loglevel >= 1 ){
+            logfile << "Error: Default Catch: Trying to guess the issue:" << endl;
+            std::exception_ptr p = std::current_exception();
+            logfile << (p ? p.__cxa_exception_type()->name() : "unknown exception") << std::endl;
+        }
+        /* Display our advertising banner ;-) */
+        writer.putS( response.getAdvert().c_str() );
     }
 
 #ifdef HAVE_VIPS
