@@ -5,6 +5,7 @@ Makefile
 doc/html
 /build
 .idea
+iipsrv.debug
 
 # Files made by autogen.sh.
 Makefile.in

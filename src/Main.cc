@@ -997,6 +997,10 @@ int main( int argc, char *argv[] )
       }
     }
 
+    catch(char const *error) {
+        logfile << "Error: " << error << endl;
+    }
+
     /* Default catch
      */
     catch( ... ){
