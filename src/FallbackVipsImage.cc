@@ -42,11 +42,9 @@ constexpr unsigned int hash_switch(const char *s, int off = 0) {
 void FallbackVipsImage::openImage() {
 
     using namespace vips;
-    if (VIPS_INIT("")) {
-        vips_error_exit(NULL);
-    }
 
     const string& imagePath = getFileName(0, 0); //args unused
+    printf("Tile name %s path \n", imagePath.c_str());
 
     //todo consider implement testImageType() to support this class and hand-pick formats
     int ext = '.';
@@ -70,6 +68,12 @@ void FallbackVipsImage::openImage() {
 
     const int width = imageObject->width();
     const int height = imageObject->height();
+
+    //50MB raw image at most
+    if (VIPS_IMAGE_SIZEOF_IMAGE(imageObject->get_image()) > 50*10e6) {
+        throw "Image too big to serve! Use tiling.";
+    }
+
     tile_width = width;
     tile_height = height;
     tile_widths.emplace_back(width);
@@ -146,11 +150,16 @@ RawTile FallbackVipsImage::getTile( int seq, int angle, unsigned int resolution,
         throw string( "Unable to read image " + imagePath );
     }
 
-    RawTile rawtile( tile, resolution, seq, angle, tile_width, tile_height, channels, bpc);
+    const size_t length = VIPS_IMAGE_SIZEOF_IMAGE(imageObject->get_image());
+
+    //set BPC 8 force treat as bytes, sizeof uses bytes too
+    RawTile rawtile( tile, resolution, seq, angle, tile_width, tile_height, channels, 8);
     rawtile.filename = imagePath;
-    rawtile.allocate();
-    //TODO two pass copy too much? but we need to remoce const... is that safe?
-    memcpy(rawtile.data, data, rawtile.capacity);
+    rawtile.allocate(length);
+    memset(rawtile.data, 0, length);
+    //TODO two pass copy too much? but we need to remove const... is that safe?
+    memcpy(rawtile.data, data, length);
+
     return rawtile;
 }
 

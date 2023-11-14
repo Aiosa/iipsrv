@@ -170,7 +170,11 @@ int main( int argc, char *argv[] )
   // Define ourselves a version
   string version = string( VERSION );
 
-
+#ifdef HAVE_VIPS
+    if (VIPS_INIT("")) {
+        throw string( "Unable to use VIPS!" );
+    }
+#endif
 
   /*************************************************
     Initialise some variables from our environment
@@ -1024,10 +1028,6 @@ int main( int argc, char *argv[] )
         writer.putS( response.getAdvert().c_str() );
     }
 
-#ifdef HAVE_VIPS
-    vips_shutdown();
-#endif
-
     /* Do some cleaning up etc. here after all the potential exceptions
        have been handled
      */
@@ -1062,6 +1062,10 @@ int main( int argc, char *argv[] )
   ic = NULL;
   tc = NULL;
 
+#ifdef HAVE_VIPS
+    printf("Vips shutdown\n");
+    vips_shutdown();
+#endif
 
   // Close our FCGI connection
 #ifndef DEBUG
