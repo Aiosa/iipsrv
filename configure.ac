@@ -417,8 +417,6 @@ fi
 
 MINIZIP_NG_LOCATION=${IIP_MINIZIP_LOCATION:-"../../minizip-ng"}
 MINIZIP_NG_NAME=${IIP_MINIZIP_LIBRARY:-"minizip-ng"}
-echo "MINIZIP_NG_LOCATION $MINIZIP_NG_LOCATION"
-echo "MINIZIP_NG_NAME $MINIZIP_NG_NAME"
 
 # Creates automatically $with_minizip
 AC_ARG_WITH([minizip], [AS_HELP_STRING([--with-minizip],

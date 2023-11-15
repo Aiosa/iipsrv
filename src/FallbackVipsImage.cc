@@ -21,6 +21,7 @@
 
 #ifdef HAVE_VIPS
 
+#include <algorithm>
 
 #include "FallbackVipsImage.h"
 #include "Logger.h"
@@ -44,7 +45,6 @@ void FallbackVipsImage::openImage() {
     using namespace vips;
 
     const string& imagePath = getFileName(0, 0); //args unused
-    printf("Tile name %s path \n", imagePath.c_str());
 
     //todo consider implement testImageType() to support this class and hand-pick formats
     int ext = '.';
@@ -74,10 +74,11 @@ void FallbackVipsImage::openImage() {
         throw "Image too big to serve! Use tiling.";
     }
 
-    tile_width = width;
-    tile_height = height;
-    tile_widths.emplace_back(width);
-    tile_heights.emplace_back(height);
+    const int tile = width < height ? width:height;
+    tile_width = tile;
+    tile_height = tile;
+    tile_widths.emplace_back(tile);
+    tile_heights.emplace_back(tile);
     image_widths.emplace_back(width);
     image_heights.emplace_back(height);
     numResolutions = 1;
@@ -132,6 +133,7 @@ void FallbackVipsImage::closeImage() {
 
 
 RawTile FallbackVipsImage::getTile( int seq, int angle, unsigned int resolution, int layer, unsigned int tile ) {
+    //todo better crop and then convert
     switch (imageObject->interpretation()) {
         case VIPS_INTERPRETATION_sRGB: colourspace = sRGB; break;
         case VIPS_INTERPRETATION_B_W: colourspace = GREYSCALE; break; //BINARY ignored...
@@ -144,22 +146,46 @@ RawTile FallbackVipsImage::getTile( int seq, int angle, unsigned int resolution,
     }
 
     const string& imagePath = getImagePath();
-    const void* data = imageObject->data();
-    if (data == NULL) {
-        //todo find cause of failure some vips error decription function
-        throw string( "Unable to read image " + imagePath );
+    const int width = imageObject->width();
+    int currentTileWidth = tile_width;
+    int currentTileHeight = tile_width;
+    const int height = imageObject->height();
+    VImage* image = NULL;
+    //odd images treated as the second part of the image data
+
+    if (width != height) {
+        if (tile == 0) {
+            VImage crop = imageObject->crop(0, 0, tile_width, tile_width);
+            image = &crop;
+        } else {
+            //odd image
+            if (width > height) {
+                currentTileWidth = width - tile_width;
+                VImage crop = imageObject->crop(tile_width, 0, currentTileWidth, tile_width);
+                image = &crop;
+            } else {
+                currentTileHeight = height - tile_width;
+                VImage crop = imageObject->crop(0, tile_width, tile_width, currentTileHeight);
+                image = &crop;
+            }
+        }
+    } else {
+        image = imageObject.get();
     }
 
-    const size_t length = VIPS_IMAGE_SIZEOF_IMAGE(imageObject->get_image());
+    const void* data = image != NULL ? image->data() : NULL;
+    if (data == NULL) {
+        throw string( "Unable to read image " + imagePath );
+    }
+    const size_t length = VIPS_IMAGE_SIZEOF_IMAGE(image->get_image());
 
     //set BPC 8 force treat as bytes, sizeof uses bytes too
-    RawTile rawtile( tile, resolution, seq, angle, tile_width, tile_height, channels, 8);
+    RawTile rawtile( tile, resolution, seq, angle, currentTileWidth, currentTileHeight, channels, 8);
     rawtile.filename = imagePath;
     rawtile.allocate(length);
     memset(rawtile.data, 0, length);
-    //TODO two pass copy too much? but we need to remove const... is that safe?
+    //todo two pass copy too much
     memcpy(rawtile.data, data, length);
-
     return rawtile;
 }
 
